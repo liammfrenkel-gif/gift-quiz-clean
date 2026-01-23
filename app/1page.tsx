@@ -2,156 +2,100 @@
 
 import { useMemo, useState } from "react";
 
-type Profile = "friend" | "coworker" | "parent" | "romantic";
-type Budget = "under_30" | "30_75" | "75_plus";
-type Vibe = "practical" | "fun" | "luxury";
-type Interest =
-  | "Sports"
-  | "Cooking"
-  | "Gardening"
-  | "Fitness"
-  | "Tech"
-  | "Gaming"
-  | "Reading"
-  | "Music"
-  | "Travel"
-  | "Coffee";
-
-const INTERESTS: Interest[] = [
-  "Sports",
-  "Cooking",
-  "Gardening",
-  "Fitness",
-  "Tech",
-  "Gaming",
-  "Reading",
-  "Music",
-  "Travel",
-  "Coffee",
-];
+const INTERESTS = ["Cooking", "Sports", "Tech", "Coffee"] as const;
 
 export default function Home() {
   const [who, setWho] = useState("");
-  const [profile, setProfile] = useState<Profile>("friend");
-  const [budget, setBudget] = useState<Budget>("30_75");
-  const [vibe, setVibe] = useState<Vibe>("practical");
-  const [selected, setSelected] = useState<Interest[]>([]);
+  const [profile, setProfile] = useState("friend");
+  const [budget, setBudget] = useState("under_30");
+  const [vibe, setVibe] = useState("classic");
+  const [interests, setInterests] = useState<string[]>([]);
 
-  const canContinue = useMemo(() => {
-    return who.trim().length >= 2 && selected.length >= 1;
-  }, [who, selected]);
+  const query = useMemo(() => {
+    const params = new URLSearchParams();
+    if (who.trim()) params.set("who", who.trim());
+    params.set("profile", profile);
+    params.set("budget", budget);
+    params.set("vibe", vibe);
+    if (interests.length) params.set("interests", interests.join("|"));
+    return params.toString();
+  }, [who, profile, budget, vibe, interests]);
 
-  function toggleInterest(i: Interest) {
-    setSelected((prev) =>
-      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+  const href = `/results?${query}`;
+
+  function toggleInterest(val: string) {
+    setInterests((prev) =>
+      prev.includes(val) ? prev.filter((x) => x !== val) : [...prev, val]
     );
   }
 
-  function goResults() {
-    if (!canContinue) return;
-
-    const sp = new URLSearchParams();
-    sp.set("who", who.trim());
-    sp.set("profile", profile);
-    sp.set("budget", budget);
-    sp.set("vibe", vibe);
-    sp.set("interests", selected.join("|"));
-
-    window.location.href = `/results?${sp.toString()}`;
-  }
-
   return (
-    <main style={{ padding: 28, fontFamily: "system-ui, Arial", maxWidth: 860, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 34, marginBottom: 8 }}>Gift Finder 🎁</h1>
-      <p style={{ marginTop: 0, opacity: 0.8 }}>
-        Answer a few quick questions. Get Amazon gift picks in seconds.
-      </p>
+    <main style={{ padding: 32, fontFamily: "system-ui, Arial", maxWidth: 900, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 36, marginBottom: 8 }}>Gift Quiz 🎁</h1>
+      <p style={{ opacity: 0.75, marginTop: 0 }}>Answer 4 quick questions and get gift ideas.</p>
 
-      <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
-        <section style={card}>
-          <div style={label}>Who is the gift for?</div>
-          <input
-            value={who}
-            onChange={(e) => setWho(e.target.value)}
-            placeholder='Example: "my brother", "girlfriend", "boss"'
-            style={input}
-          />
-          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-            Tip: type “girlfriend”, “dad”, “coworker”, etc.
+      <div style={card}>
+        <label style={label}>Who is the gift for?</label>
+        <input
+          value={who}
+          onChange={(e) => setWho(e.target.value)}
+          placeholder="e.g., my brother, my girlfriend, my boss"
+          style={input}
+        />
+
+        <div style={row}>
+          <div style={{ flex: 1 }}>
+            <label style={label}>Profile</label>
+            <select value={profile} onChange={(e) => setProfile(e.target.value)} style={input}>
+              <option value="friend">Friend</option>
+              <option value="partner">Partner</option>
+              <option value="parent">Parent</option>
+              <option value="coworker">Coworker</option>
+            </select>
           </div>
-        </section>
 
-        <section style={card}>
-          <div style={label}>Relationship</div>
-          <div style={row}>
-            {(["friend", "coworker", "parent", "romantic"] as Profile[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setProfile(p)}
-                style={pill(profile === p)}
-              >
-                {p}
-              </button>
-            ))}
+          <div style={{ flex: 1 }}>
+            <label style={label}>Budget</label>
+            <select value={budget} onChange={(e) => setBudget(e.target.value)} style={input}>
+              <option value="under_30">Under $30</option>
+              <option value="30_75">$30–$75</option>
+              <option value="75_plus">$75+</option>
+            </select>
           </div>
-        </section>
 
-        <section style={card}>
-          <div style={label}>Budget</div>
-          <div style={row}>
-            <button onClick={() => setBudget("under_30")} style={pill(budget === "under_30")}>
-              under $30
+          <div style={{ flex: 1 }}>
+            <label style={label}>Vibe</label>
+            <select value={vibe} onChange={(e) => setVibe(e.target.value)} style={input}>
+              <option value="classic">Classic</option>
+              <option value="fun">Fun</option>
+              <option value="luxury">Luxury</option>
+              <option value="practical">Practical</option>
+            </select>
+          </div>
+        </div>
+
+        <label style={label}>Interests</label>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {INTERESTS.map((i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => toggleInterest(i)}
+              style={{
+                ...pill,
+                borderColor: interests.includes(i) ? "#111" : "#ddd",
+                background: interests.includes(i) ? "#111" : "#fff",
+                color: interests.includes(i) ? "#fff" : "#111",
+              }}
+            >
+              {i}
             </button>
-            <button onClick={() => setBudget("30_75")} style={pill(budget === "30_75")}>
-              $30–$75
-            </button>
-            <button onClick={() => setBudget("75_plus")} style={pill(budget === "75_plus")}>
-              $75+
-            </button>
-          </div>
-        </section>
+          ))}
+        </div>
 
-        <section style={card}>
-          <div style={label}>Vibe</div>
-          <div style={row}>
-            {(["practical", "fun", "luxury"] as Vibe[]).map((v) => (
-              <button key={v} onClick={() => setVibe(v)} style={pill(vibe === v)}>
-                {v}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section style={card}>
-          <div style={label}>Interests (pick 1–5)</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {INTERESTS.map((i) => (
-              <button
-                key={i}
-                onClick={() => toggleInterest(i)}
-                style={pill(selected.includes(i))}
-              >
-                {i}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <button
-          onClick={goResults}
-          disabled={!canContinue}
-          style={{
-            padding: "14px 16px",
-            borderRadius: 14,
-            border: "1px solid #ddd",
-            cursor: canContinue ? "pointer" : "not-allowed",
-            fontWeight: 700,
-            fontSize: 16,
-            opacity: canContinue ? 1 : 0.5,
-          }}
-        >
+        <a href={href} style={cta}>
           Get gift ideas →
-        </button>
+        </a>
       </div>
     </main>
   );
@@ -161,36 +105,47 @@ const card: React.CSSProperties = {
   border: "1px solid #e6e6e6",
   borderRadius: 16,
   padding: 16,
-};
-
-const label: React.CSSProperties = {
-  fontWeight: 700,
-  marginBottom: 10,
+  marginTop: 18,
 };
 
 const row: React.CSSProperties = {
   display: "flex",
+  gap: 12,
+  marginTop: 14,
   flexWrap: "wrap",
-  gap: 10,
+};
+
+const label: React.CSSProperties = {
+  display: "block",
+  fontWeight: 700,
+  marginTop: 14,
+  marginBottom: 6,
 };
 
 const input: React.CSSProperties = {
   width: "100%",
-  padding: "12px 12px",
+  padding: "10px 12px",
   borderRadius: 12,
   border: "1px solid #ddd",
-  fontSize: 16,
+  fontSize: 14,
 };
 
-function pill(active: boolean): React.CSSProperties {
-  return {
-    padding: "10px 12px",
-    borderRadius: 999,
-    border: "1px solid #ddd",
-    cursor: "pointer",
-    fontWeight: 600,
-    opacity: active ? 1 : 0.75,
-    background: active ? "black" : "white",
-    color: active ? "white" : "black",
-  };
-}
+const pill: React.CSSProperties = {
+  padding: "8px 12px",
+  borderRadius: 999,
+  border: "1px solid #ddd",
+  cursor: "pointer",
+  fontWeight: 700,
+};
+
+const cta: React.CSSProperties = {
+  display: "inline-block",
+  marginTop: 18,
+  padding: "10px 14px",
+  borderRadius: 12,
+  border: "1px solid #111",
+  background: "#111",
+  color: "#fff",
+  fontWeight: 800,
+  textDecoration: "none",
+};
