@@ -1,151 +1,187 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
-const INTERESTS = ["Cooking", "Sports", "Tech", "Coffee"] as const;
+type Option = { label: string; value: string };
+type Question = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  options: Option[];
+};
+
+const QUESTIONS: Question[] = [
+  {
+    id: "relationship",
+    title: "Who is this gift for?",
+    options: [
+      { label: "Partner", value: "partner" },
+      { label: "Friend", value: "friend" },
+      { label: "Family", value: "family" },
+      { label: "Coworker", value: "coworker" },
+    ],
+  },
+  {
+    id: "budget",
+    title: "Budget?",
+    options: [
+      { label: "Under $25", value: "under_25" },
+      { label: "$25–$50", value: "25_50" },
+      { label: "$50–$100", value: "50_100" },
+      { label: "$100+", value: "100_plus" },
+    ],
+  },
+  {
+    id: "vibe",
+    title: "What vibe do you want?",
+    subtitle: "Pick the closest match.",
+    options: [
+      { label: "Thoughtful", value: "thoughtful" },
+      { label: "Funny", value: "funny" },
+      { label: "Practical", value: "practical" },
+      { label: "Luxury", value: "luxury" },
+    ],
+  },
+  {
+    id: "interests",
+    title: "What are they into most?",
+    options: [
+      { label: "Food / cooking", value: "food" },
+      { label: "Fitness / health", value: "fitness" },
+      { label: "Tech / gadgets", value: "tech" },
+      { label: "Arts / books", value: "arts" },
+    ],
+  },
+];
 
 export default function Home() {
-  const [who, setWho] = useState("");
-  const [profile, setProfile] = useState("friend");
-  const [budget, setBudget] = useState("under_30");
-  const [vibe, setVibe] = useState("classic");
-  const [interests, setInterests] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
-  const query = useMemo(() => {
+  const progress = useMemo(() => {
+    const answered = QUESTIONS.filter((q) => !!answers[q.id]).length;
+    return { answered, total: QUESTIONS.length };
+  }, [answers]);
+
+  const allAnswered = progress.answered === progress.total;
+
+ Z
+  const resultsHref = useMemo(() => {
     const params = new URLSearchParams();
-    if (who.trim()) params.set("who", who.trim());
-    params.set("profile", profile);
-    params.set("budget", budget);
-    params.set("vibe", vibe);
-    if (interests.length) params.set("interests", interests.join("|"));
-    return params.toString();
-  }, [who, profile, budget, vibe, interests]);
-
-  const href = `/results?${query}`;
-
-  function toggleInterest(val: string) {
-    setInterests((prev) =>
-      prev.includes(val) ? prev.filter((x) => x !== val) : [...prev, val]
-    );
-  }
+    for (const [k, v] of Object.entries(answers)) params.set(k, v);
+    return `/results?${params.toString()}`;
+  }, [answers]);
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui, Arial", maxWidth: 900, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 36, marginBottom: 8 }}>Gift Quiz 🎁</h1>
-      <p style={{ opacity: 0.75, marginTop: 0 }}>Answer 4 quick questions and get gift ideas.</p>
+    <main style={{ padding: 32, fontFamily: "system-ui, Arial" }}>
+      <h1 style={{ margin: 0 }}>Gift Quiz 🎁</h1>
+      <p style={{ marginTop: 8, color: "#444" }}>
+        Answer a few quick questions and we’ll recommend gifts.
+      </p>
 
-      <div style={card}>
-        <label style={label}>Who is the gift for?</label>
-        <input
-          value={who}
-          onChange={(e) => setWho(e.target.value)}
-          placeholder="e.g., my brother, my girlfriend, my boss"
-          style={input}
-        />
-
-        <div style={row}>
-          <div style={{ flex: 1 }}>
-            <label style={label}>Profile</label>
-            <select value={profile} onChange={(e) => setProfile(e.target.value)} style={input}>
-              <option value="friend">Friend</option>
-              <option value="partner">Partner</option>
-              <option value="parent">Parent</option>
-              <option value="coworker">Coworker</option>
-            </select>
-          </div>
-
-          <div style={{ flex: 1 }}>
-            <label style={label}>Budget</label>
-            <select value={budget} onChange={(e) => setBudget(e.target.value)} style={input}>
-              <option value="under_30">Under $30</option>
-              <option value="30_75">$30–$75</option>
-              <option value="75_plus">$75+</option>
-            </select>
-          </div>
-
-          <div style={{ flex: 1 }}>
-            <label style={label}>Vibe</label>
-            <select value={vibe} onChange={(e) => setVibe(e.target.value)} style={input}>
-              <option value="classic">Classic</option>
-              <option value="fun">Fun</option>
-              <option value="luxury">Luxury</option>
-              <option value="practical">Practical</option>
-            </select>
-          </div>
+      <div
+        style={{
+          marginTop: 16,
+          padding: 12,
+          border: "1px solid #eee",
+          borderRadius: 10,
+          maxWidth: 720,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <strong>
+            Progress: {progress.answered}/{progress.total}
+          </strong>
+          <button
+            type="button"
+            onClick={() => setAnswers({})}
+            style={{
+              border: "1px solid #ddd",
+              background: "white",
+              borderRadius: 8,
+              padding: "6px 10px",
+              cursor: "pointer",
+            }}
+          >
+            Reset
+          </button>
         </div>
+      </div>
 
-        <label style={label}>Interests</label>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          {INTERESTS.map((i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => toggleInterest(i)}
-              style={{
-                ...pill,
-                borderColor: interests.includes(i) ? "#111" : "#ddd",
-                background: interests.includes(i) ? "#111" : "#fff",
-                color: interests.includes(i) ? "#fff" : "#111",
-              }}
-            >
-              {i}
-            </button>
-          ))}
-        </div>
+      <div style={{ marginTop: 20, maxWidth: 720 }}>
+        {QUESTIONS.map((q, idx) => (
+          <section
+            key={q.id}
+            style={{
+              marginTop: idx === 0 ? 0 : 18,
+              padding: 16,
+              border: "1px solid #eee",
+              borderRadius: 12,
+            }}
+          >
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontWeight: 700 }}>{q.title}</div>
+              {q.subtitle ? (
+                <div style={{ color: "#666", fontSize: 14 }}>{q.subtitle}</div>
+              ) : null}
+            </div>
 
-        <a href={href} style={cta}>
-          Get gift ideas →
-        </a>
+            <div style={{ display: "grid", gap: 10 }}>
+              {q.options.map((opt) => {
+                const selected = answers[q.id] === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() =>
+                      setAnswers((prev) => ({ ...prev, [q.id]: opt.value }))
+                    }
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 14px",
+                      borderRadius: 10,
+                      border: selected ? "2px solid #111" : "1px solid #ddd",
+                      background: selected ? "#111" : "white",
+                      color: selected ? "white" : "#111",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 22 }}>
+        <Link
+          href={allAnswered ? resultsHref : "#"}
+          onClick={(e) => {
+            if (!allAnswered) e.preventDefault();
+          }}
+          style={{
+            display: "inline-block",
+            padding: "12px 16px",
+            borderRadius: 10,
+            background: allAnswered ? "#111" : "#bbb",
+            color: "white",
+            textDecoration: "none",
+            fontWeight: 700,
+            cursor: allAnswered ? "pointer" : "not-allowed",
+          }}
+        >
+          See results
+        </Link>
+
+        {!allAnswered ? (
+          <div style={{ marginTop: 8, color: "#777", fontSize: 14 }}>
+            Answer all questions to unlock results.
+          </div>
+        ) : null}
       </div>
     </main>
   );
 }
-
-const card: React.CSSProperties = {
-  border: "1px solid #e6e6e6",
-  borderRadius: 16,
-  padding: 16,
-  marginTop: 18,
-};
-
-const row: React.CSSProperties = {
-  display: "flex",
-  gap: 12,
-  marginTop: 14,
-  flexWrap: "wrap",
-};
-
-const label: React.CSSProperties = {
-  display: "block",
-  fontWeight: 700,
-  marginTop: 14,
-  marginBottom: 6,
-};
-
-const input: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid #ddd",
-  fontSize: 14,
-};
-
-const pill: React.CSSProperties = {
-  padding: "8px 12px",
-  borderRadius: 999,
-  border: "1px solid #ddd",
-  cursor: "pointer",
-  fontWeight: 700,
-};
-
-const cta: React.CSSProperties = {
-  display: "inline-block",
-  marginTop: 18,
-  padding: "10px 14px",
-  borderRadius: 12,
-  border: "1px solid #111",
-  background: "#111",
-  color: "#fff",
-  fontWeight: 800,
-  textDecoration: "none",
-};
